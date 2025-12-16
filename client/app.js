@@ -12,6 +12,7 @@ function loadPage() {
     
     if (path.includes('index.html') || path.endsWith('/')) {
         loadDashboard();
+        setupDashboardClickHandlers();
     } else if (path.includes('musteriler.html')) {
         loadMusteriler();
     } else if (path.includes('urunler.html')) {
@@ -33,7 +34,7 @@ async function loadDashboard() {
         
         document.querySelector('.stats').innerHTML = `
             <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-lira-sign"></i></div>
+                <div class="stat-icon green"><i class="fas fa-wallet"></i></div>
                 <div class="stat-info"><h3>₺${Number(stats.toplamsatis).toLocaleString('tr-TR')}</h3><p>Toplam Satış</p></div>
             </div>
             <div class="stat-card">
@@ -99,8 +100,40 @@ async function loadDashboard() {
             </tr>
         `).join('');
 
+        // Click handlers'ı kur
+        setupDashboardClickHandlers();
+
     } catch (err) {
         console.error('Dashboard yüklenemedi:', err);
+    }
+}
+
+// =====================================================
+// DASHBOARD CLICK HANDLERS
+// =====================================================
+function setupDashboardClickHandlers() {
+    const statCards = document.querySelectorAll('.stat-card');
+    
+    if (statCards.length >= 4) {
+        // Toplam Satış -> Raporlar
+        statCards[0].onclick = () => {
+            window.location.href = 'raporlar.html';
+        };
+        
+        // Müşteri Sayısı -> Müşteriler
+        statCards[1].onclick = () => {
+            window.location.href = 'musteriler.html';
+        };
+        
+        // Ürün Sayısı -> Ürünler
+        statCards[2].onclick = () => {
+            window.location.href = 'urunler.html';
+        };
+        
+        // Sipariş Sayısı -> Satışlar
+        statCards[3].onclick = () => {
+            window.location.href = 'satislar.html';
+        };
     }
 }
 

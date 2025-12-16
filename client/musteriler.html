@@ -110,9 +110,16 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Şehir</label>
-                            <input type="text" id="sehir">
+                            <label>Müşteri Tipi</label>
+                            <select id="musteritipi" required>
+                                <option value="Bireysel" selected>Bireysel</option>
+                                <option value="Kurumsal">Kurumsal</option>
+                            </select>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Şehir</label>
+                        <input type="text" id="sehir">
                     </div>
                 </form>
             </div>
@@ -288,6 +295,7 @@
             document.getElementById('email').value = musteri.email;
             document.getElementById('telefon').value = musteri.telefon || '';
             document.getElementById('cinsiyet').value = musteri.cinsiyet || '';
+            document.getElementById('musteritipi').value = musteri.musteritipi || 'Bireysel';
             document.getElementById('sehir').value = musteri.sehir || '';
             document.getElementById('musteriModal').classList.add('active');
         }
@@ -300,6 +308,7 @@
                 email: document.getElementById('email').value,
                 telefon: document.getElementById('telefon').value,
                 cinsiyet: document.getElementById('cinsiyet').value,
+                musteritipi: document.getElementById('musteritipi').value,
                 sehir: document.getElementById('sehir').value
             };
 

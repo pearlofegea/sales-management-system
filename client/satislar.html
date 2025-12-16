@@ -267,7 +267,7 @@
                 
                 const select = document.getElementById('musteriSelect');
                 select.innerHTML = '<option value="">Müşteri Seçin</option>' +
-                    musteriler.map(m => `<option value="${m.musteriid}" data-tip="${m.musteri_tipi || 'Bireysel'}">${m.ad} ${m.soyad} (${m.musteri_tipi || 'Bireysel'})</option>`).join('');
+                    musteriler.map(m => `<option value="${m.musteriid}" data-tip="${m.musteritipi || 'Bireysel'}">${m.ad} ${m.soyad} (${m.musteritipi || 'Bireysel'})</option>`).join('');
             } catch (err) {
                 console.error('Müşteriler yüklenemedi:', err);
             }
@@ -287,7 +287,7 @@
             
             document.getElementById('satislarBody').innerHTML = data.map(s => {
                 const musteri = musteriler.find(m => m.musteriid === s.musteriid);
-                const musteriTipi = musteri ? (musteri.musteri_tipi || 'Bireysel') : 'Bireysel';
+                const musteriTipi = musteri ? (musteri.musteritipi || 'Bireysel') : 'Bireysel';
                 
                 return `
                 <tr>
@@ -328,14 +328,23 @@
             if (musteriTipi) {
                 filtered = filtered.filter(s => {
                     const musteri = musteriler.find(m => m.musteriid === s.musteriid);
-                    return musteri && (musteri.musteri_tipi || 'Bireysel') === musteriTipi;
+                    return musteri && (musteri.musteritipi || 'Bireysel') === musteriTipi;
                 });
             }
             if (baslangic) {
-                filtered = filtered.filter(s => new Date(s.siparistarihi) >= new Date(baslangic));
+                const baslangicTarih = new Date(baslangic);
+                filtered = filtered.filter(s => {
+                    const siparisTarih = new Date(s.siparistarihi);
+                    return siparisTarih >= baslangicTarih;
+                });
             }
             if (bitis) {
-                filtered = filtered.filter(s => new Date(s.siparistarihi) <= new Date(bitis));
+                const bitisTarih = new Date(bitis);
+                bitisTarih.setHours(23, 59, 59, 999);
+                filtered = filtered.filter(s => {
+                    const siparisTarih = new Date(s.siparistarihi);
+                    return siparisTarih <= bitisTarih;
+                });
             }
 
             renderSatislar(filtered);
@@ -451,7 +460,7 @@
                 const data = await response.json();
                 
                 const musteri = musteriler.find(m => m.musteriid === data.musteriid);
-                const musteriTipi = musteri ? (musteri.musteri_tipi || 'Bireysel') : 'Bireysel';
+                const musteriTipi = musteri ? (musteri.musteritipi || 'Bireysel') : 'Bireysel';
                 
                 document.getElementById('detayContent').innerHTML = `
                     <div class="detay-item"><span>Sipariş No:</span><strong>#${data.siparisid}</strong></div>

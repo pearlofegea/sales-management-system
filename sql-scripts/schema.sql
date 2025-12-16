@@ -1,340 +1,293 @@
 -- =====================================================
--- SatışPro - Satış Yönetim Sistemi
--- Veritabanı Şeması ve Sorgular
--- Marmara Üniversitesi - VTYS Dersi 2025-2026
+-- KATEGORİLER TABLOSU
 -- =====================================================
-
--- =====================================================
--- DDL: TABLO OLUŞTURMA
--- =====================================================
-
--- 1. Kategoriler Tablosu
-CREATE TABLE kategoriler (
+CREATE TABLE IF NOT EXISTS kategoriler (
     kategoriid SERIAL PRIMARY KEY,
     kategoriad VARCHAR(100) NOT NULL UNIQUE,
     aciklama TEXT
 );
 
--- 2. Müşteriler Tablosu
-CREATE TABLE musteriler (
-    musteriid SERIAL PRIMARY KEY,
-    ad VARCHAR(50) NOT NULL,
-    soyad VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    telefon VARCHAR(20),
-    cinsiyet VARCHAR(10) CHECK (cinsiyet IN ('Erkek', 'Kadın')),
-    sehir VARCHAR(50),
-    musteri_tipi VARCHAR(20) DEFAULT 'Bireysel' CHECK (musteri_tipi IN ('Bireysel', 'Kurumsal')),
-    kayittarihi DATE DEFAULT CURRENT_DATE
-);
-
--- 3. Ürünler Tablosu
-CREATE TABLE urunler (
+-- =====================================================
+-- ÜRÜNLER TABLOSU
+-- =====================================================
+CREATE TABLE IF NOT EXISTS urunler (
     urunid SERIAL PRIMARY KEY,
     urunadi VARCHAR(150) NOT NULL,
-    kategoriid INTEGER REFERENCES kategoriler(kategoriid),
-    fiyat NUMERIC(10,2) NOT NULL CHECK (fiyat > 0),
-    stok INTEGER DEFAULT 0 CHECK (stok >= 0),
+    kategoriid INTEGER NOT NULL REFERENCES kategoriler(kategoriid),
+    fiyat DECIMAL(10, 2) NOT NULL CHECK (fiyat >= 0),
+    stok INTEGER NOT NULL CHECK (stok >= 0),
     aciklama TEXT
 );
 
--- 4. Siparişler Tablosu
-CREATE TABLE siparisler (
+-- =====================================================
+-- MÜŞTERİLER TABLOSU
+-- =====================================================
+CREATE TABLE IF NOT EXISTS musteriler (
+    musteriid SERIAL PRIMARY KEY,
+    ad VARCHAR(50) NOT NULL,
+    soyad VARCHAR(50) NOT NULL,
+    email VARCHAR(100),
+    telefon VARCHAR(15),
+    musteritipi VARCHAR(50),
+    cinsiyet VARCHAR(10),
+    sehir VARCHAR(50),
+    kayittarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- SİPARİŞLER TABLOSU
+-- =====================================================
+CREATE TABLE IF NOT EXISTS siparisler (
     siparisid SERIAL PRIMARY KEY,
     musteriid INTEGER NOT NULL REFERENCES musteriler(musteriid),
-    siparistarihi DATE DEFAULT CURRENT_DATE,
-    toplamtutar NUMERIC(12,2) DEFAULT 0,
-    durum VARCHAR(20) DEFAULT 'Beklemede' 
-        CHECK (durum IN ('Beklemede', 'Onaylandı', 'Kargoda', 'Teslim Edildi', 'İptal')),
-    odemeyontemi VARCHAR(20) CHECK (odemeyontemi IN ('Nakit', 'Kredi Kartı', 'Havale'))
+    siparistarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    toplamtutar DECIMAL(12, 2) NOT NULL CHECK (toplamtutar >= 0),
+    durum VARCHAR(50) DEFAULT 'Beklemede',
+    odemeyontemi VARCHAR(50)
 );
 
--- 5. Sipariş Detayları Tablosu
-CREATE TABLE siparisdetaylari (
+-- =====================================================
+-- SİPARİŞ DETAYLARI TABLOSU
+-- =====================================================
+CREATE TABLE IF NOT EXISTS siparisdetaylari (
     detayid SERIAL PRIMARY KEY,
-    siparisid INTEGER NOT NULL REFERENCES siparisler(siparisid) ON DELETE CASCADE,
+    siparisid INTEGER NOT NULL REFERENCES siparisler(siparisid),
     urunid INTEGER NOT NULL REFERENCES urunler(urunid),
     miktar INTEGER NOT NULL CHECK (miktar > 0),
-    birimfiyat NUMERIC(10,2) NOT NULL,
-    aratoplam NUMERIC(12,2) GENERATED ALWAYS AS (miktar * birimfiyat) STORED
+    birimfiyat DECIMAL(10, 2) NOT NULL CHECK (birimfiyat >= 0),
+    aratoplam DECIMAL(12, 2) NOT NULL CHECK (aratoplam >= 0)
 );
 
--- INDEX'ler (Performans için)
-CREATE INDEX idx_siparisler_musteri ON siparisler(musteriid);
-CREATE INDEX idx_siparisler_tarih ON siparisler(siparistarihi);
-CREATE INDEX idx_urunler_kategori ON urunler(kategoriid);
-CREATE INDEX idx_detay_siparis ON siparisdetaylari(siparisid);
+-- =====================================================
+-- İNDEKSLER
+-- =====================================================
+CREATE INDEX IF NOT EXISTS idx_urunler_kategoriid ON urunler(kategoriid);
+CREATE INDEX IF NOT EXISTS idx_siparisler_musteriid ON siparisler(musteriid);
+CREATE INDEX IF NOT EXISTS idx_siparisler_tarih ON siparisler(siparistarihi);
+CREATE INDEX IF NOT EXISTS idx_siparisdetaylari_siparisid ON siparisdetaylari(siparisid);
+CREATE INDEX IF NOT EXISTS idx_siparisdetaylari_urunid ON siparisdetaylari(urunid);
 
 -- =====================================================
--- DML: VERİ EKLEME (INSERT)
+-- KATEGORİLER - ÖRNEK VERİLER
 -- =====================================================
-
--- Kategoriler
 INSERT INTO kategoriler (kategoriad, aciklama) VALUES
-('Elektronik', 'Elektronik cihazlar ve aksesuarlar'),
-('Bilgisayar', 'Dizüstü ve masaüstü bilgisayarlar'),
-('Telefon', 'Akıllı telefonlar ve tabletler'),
-('Giyim', 'Giyim ürünleri'),
-('Ev & Yaşam', 'Ev elektroniği ve yaşam ürünleri'),
-('Spor', 'Spor ekipmanları');
-
--- Müşteriler
-INSERT INTO musteriler (ad, soyad, email, telefon, cinsiyet, sehir, musteri_tipi) VALUES
-('Ali', 'Yılmaz', 'ali.yilmaz@email.com', '0532-111-1111', 'Erkek', 'İstanbul', 'Kurumsal'),
-('Ayşe', 'Demir', 'ayse.demir@email.com', '0533-222-2222', 'Kadın', 'Ankara', 'Bireysel'),
-('Mehmet', 'Kaya', 'mehmet.kaya@email.com', '0534-333-3333', 'Erkek', 'İzmir', 'Bireysel'),
-('Fatma', 'Çelik', 'fatma.celik@email.com', '0535-444-4444', 'Kadın', 'Bursa', 'Bireysel'),
-('Can', 'Özkan', 'can.ozkan@email.com', '0536-555-5555', 'Erkek', 'Antalya', 'Kurumsal'),
-('Zeynep', 'Aydın', 'zeynep.aydin@email.com', '0537-666-6666', 'Kadın', 'İstanbul', 'Bireysel'),
-('Emre', 'Şahin', 'emre.sahin@email.com', '0538-777-7777', 'Erkek', 'Ankara', 'Bireysel'),
-('Elif', 'Arslan', 'elif.arslan@email.com', '0539-888-8888', 'Kadın', 'İzmir', 'Bireysel'),
-('Burak', 'Koç', 'burak.koc@email.com', '0530-999-9999', 'Erkek', 'İstanbul', 'Kurumsal'),
-('Selin', 'Yıldız', 'selin.yildiz@email.com', '0531-000-0000', 'Kadın', 'Ankara', 'Bireysel');
-
--- Ürünler
-INSERT INTO urunler (urunadi, kategoriid, fiyat, stok, aciklama) VALUES
-('Laptop Pro 15', 2, 24999.99, 50, 'Intel i7, 16GB RAM, 512GB SSD'),
-('Laptop Air 14', 2, 18999.99, 35, 'Intel i5, 8GB RAM, 256GB SSD'),
-('SmartPhone X', 3, 14999.99, 100, '6.5 inch, 128GB, 5G'),
-('SmartPhone Lite', 3, 8999.99, 150, '6.1 inch, 64GB, 4G'),
-('Tablet Pro', 3, 12999.99, 45, '10.5 inch, 256GB'),
-('Kablosuz Mouse', 2, 299.99, 200, 'Ergonomik tasarım'),
-('Mekanik Klavye', 2, 899.99, 80, 'RGB aydınlatma'),
-('Bluetooth Kulaklık', 1, 2499.99, 60, 'Noise cancelling'),
-('4K Monitor 27"', 2, 6999.99, 40, '4K UHD, 144Hz'),
-('Spor Ayakkabı', 6, 1299.99, 120, 'Koşu için ideal'),
-('Elektrikli Süpürge', 5, 4999.99, 30, 'Kablosuz, güçlü emiş'),
-('Kahve Makinesi', 5, 2499.99, 45, 'Otomatik, 15 bar basınç'),
-('Robot Süpürge', 5, 8999.99, 20, 'Akıllı haritalama'),
-('Air Fryer', 5, 3499.99, 35, '5L kapasite'),
-('Koşu Bandı', 6, 15999.99, 10, 'Katlanabilir, 18km/h'),
-('Dambıl Seti', 6, 1999.99, 50, '2-20kg arası'),
-('Yoga Matı', 6, 299.99, 100, 'Kaymaz, 6mm'),
-('Erkek Mont', 4, 1999.99, 40, 'Su geçirmez, kışlık'),
-('Kadın Ceket', 4, 1499.99, 35, 'Deri, şık tasarım');
-
--- Siparişler
-INSERT INTO siparisler (musteriid, siparistarihi, toplamtutar, durum, odemeyontemi) VALUES
-(1, '2024-01-15', 25299.98, 'Teslim Edildi', 'Kredi Kartı'),
-(2, '2024-01-18', 14999.99, 'Teslim Edildi', 'Havale'),
-(3, '2024-02-05', 9899.97, 'Teslim Edildi', 'Kredi Kartı'),
-(4, '2024-02-12', 18999.99, 'Teslim Edildi', 'Nakit'),
-(5, '2024-03-01', 3699.97, 'Kargoda', 'Kredi Kartı'),
-(6, '2024-03-10', 44999.97, 'Onaylandı', 'Havale'),
-(7, '2024-03-15', 27499.98, 'Teslim Edildi', 'Kredi Kartı'),
-(1, '2024-04-02', 2499.99, 'Teslim Edildi', 'Kredi Kartı'),
-(8, '2024-04-10', 8999.99, 'Kargoda', 'Havale'),
-(9, '2024-04-20', 1499.98, 'Beklemede', 'Nakit'),
-(2, '2024-05-05', 6999.99, 'Teslim Edildi', 'Kredi Kartı'),
-(10, '2024-05-12', 3499.99, 'Onaylandı', 'Havale');
-
--- Sipariş Detayları
-INSERT INTO siparisdetaylari (siparisid, urunid, miktar, birimfiyat) VALUES
-(1, 1, 1, 24999.99),
-(1, 6, 1, 299.99),
-(2, 3, 1, 14999.99),
-(3, 4, 1, 8999.99),
-(3, 7, 1, 899.99),
-(4, 2, 1, 18999.99),
-(5, 10, 2, 1299.99),
-(5, 17, 3, 299.99),
-(6, 1, 1, 24999.99),
-(6, 3, 1, 14999.99),
-(6, 8, 2, 2499.99),
-(7, 2, 1, 18999.99),
-(7, 8, 1, 2499.99),
-(7, 9, 1, 6999.99),
-(8, 8, 1, 2499.99),
-(9, 13, 1, 8999.99),
-(10, 6, 2, 299.99),
-(10, 7, 1, 899.99),
-(11, 9, 1, 6999.99),
-(12, 14, 1, 3499.99);
+    ('Elektronik', 'Elektronik cihazlar ve aksesuarlar'),
+    ('Bilgisayar', 'Dizüstü ve masaüstü bilgisayarlar'),
+    ('Telefon', 'Akıllı telefonlar ve tabletler'),
+    ('Giyim', 'Erkek ve kadın giyim ürünleri'),
+    ('Ev & Yaşam', 'Ev dekorasyon ürünleri'),
+    ('Spor', 'Spor ekipmanları')
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- DML: GÜNCELLEME (UPDATE) ÖRNEKLERİ
+-- MÜŞTERİLER - ÖRNEK VERİLER
 -- =====================================================
-
--- Ürün fiyatını güncelle
-UPDATE urunler SET fiyat = 22999.99 WHERE urunid = 1;
-
--- Sipariş durumunu güncelle
-UPDATE siparisler SET durum = 'Kargoda' WHERE siparisid = 10;
-
--- Stok güncelle
-UPDATE urunler SET stok = stok + 20 WHERE kategoriid = 5;
-
--- =====================================================
--- DML: SİLME (DELETE) ÖRNEKLERİ
--- =====================================================
-
--- İptal edilen siparişleri sil
--- DELETE FROM siparisler WHERE durum = 'İptal';
-
--- Stokta olmayan ürünleri sil
--- DELETE FROM urunler WHERE stok = 0;
-
--- =====================================================
--- SELECT SORGULARI (10 ADET)
--- =====================================================
-
--- 1. TEMEL SELECT: Tüm müşterileri listele
-SELECT * FROM musteriler ORDER BY kayittarihi DESC;
-
--- 2. FİLTRELEME: İstanbul'daki kurumsal müşteriler
-SELECT ad, soyad, email, sehir, musteri_tipi 
-FROM musteriler 
-WHERE sehir = 'İstanbul' AND musteri_tipi = 'Kurumsal';
-
--- 3. SIRALAMA: En pahalı 5 ürün
-SELECT urunadi, fiyat, stok 
-FROM urunler 
-ORDER BY fiyat DESC 
-LIMIT 5;
-
--- 4. JOIN (2 tablo): Siparişler ve müşteri adları
-SELECT s.siparisid, m.ad || ' ' || m.soyad AS musteri, 
-       s.toplamtutar, s.durum, s.odemeyontemi
-FROM siparisler s
-JOIN musteriler m ON s.musteriid = m.musteriid
-ORDER BY s.siparistarihi DESC;
-
--- 5. JOIN + GROUP BY + SUM: Müşteri bazlı toplam harcama
-SELECT m.ad || ' ' || m.soyad AS musteri, 
-       m.musteri_tipi,
-       COUNT(s.siparisid) AS siparis_sayisi,
-       SUM(s.toplamtutar) AS toplam_harcama
-FROM musteriler m
-JOIN siparisler s ON m.musteriid = s.musteriid
-GROUP BY m.musteriid, m.ad, m.soyad, m.musteri_tipi
-ORDER BY toplam_harcama DESC;
-
--- 6. JOIN (3 tablo) + GROUP BY: Kategori bazlı satış geliri
-SELECT k.kategoriad, 
-       COUNT(sd.detayid) AS satis_adedi,
-       SUM(sd.aratoplam) AS toplam_gelir
-FROM kategoriler k
-JOIN urunler u ON k.kategoriid = u.kategoriid
-JOIN siparisdetaylari sd ON u.urunid = sd.urunid
-GROUP BY k.kategoriad
-ORDER BY toplam_gelir DESC;
-
--- 7. HAVING: 20.000₺ üstü harcayan müşteriler
-SELECT m.ad || ' ' || m.soyad AS musteri,
-       m.musteri_tipi,
-       SUM(s.toplamtutar) AS toplam_harcama
-FROM musteriler m
-JOIN siparisler s ON m.musteriid = s.musteriid
-GROUP BY m.musteriid, m.ad, m.soyad, m.musteri_tipi
-HAVING SUM(s.toplamtutar) > 20000
-ORDER BY toplam_harcama DESC;
-
--- 8. JOIN (4 tablo): Detaylı sipariş listesi
-SELECT s.siparisid, 
-       m.ad || ' ' || m.soyad AS musteri,
-       u.urunadi, 
-       k.kategoriad,
-       sd.miktar, 
-       sd.aratoplam
-FROM siparisler s
-JOIN musteriler m ON s.musteriid = m.musteriid
-JOIN siparisdetaylari sd ON s.siparisid = sd.siparisid
-JOIN urunler u ON sd.urunid = u.urunid
-JOIN kategoriler k ON u.kategoriid = k.kategoriid
-ORDER BY s.siparisid;
-
--- 9. AGGREGATE + GROUP BY: Şehir bazlı satış analizi
-SELECT m.sehir,
-       COUNT(DISTINCT m.musteriid) AS musteri_sayisi,
-       COUNT(s.siparisid) AS siparis_sayisi,
-       SUM(s.toplamtutar) AS toplam_satis,
-       ROUND(AVG(s.toplamtutar), 2) AS ortalama_siparis
-FROM musteriler m
-JOIN siparisler s ON m.musteriid = s.musteriid
-WHERE s.durum != 'İptal'
-GROUP BY m.sehir
-ORDER BY toplam_satis DESC;
-
--- 10. GROUP BY + HAVING: En çok satan ürünler (min 2 satış)
-SELECT u.urunadi, 
-       k.kategoriad,
-       SUM(sd.miktar) AS toplam_adet,
-       SUM(sd.aratoplam) AS toplam_gelir
-FROM urunler u
-JOIN kategoriler k ON u.kategoriid = k.kategoriid
-JOIN siparisdetaylari sd ON u.urunid = sd.urunid
-GROUP BY u.urunid, u.urunadi, k.kategoriad
-HAVING SUM(sd.miktar) >= 2
-ORDER BY toplam_adet DESC;
+INSERT INTO musteriler (ad, soyad, email, telefon, musteritipi, cinsiyet, sehir, kayittarihi) VALUES
+    ('Ali', 'Yılmaz', 'ali1@mail.com', '05310012345', 'Bireysel', 'Erkek', 'İstanbul', '2023-01-16'),
+    ('Ayşe', 'Demir', 'ayse2@mail.com', '05320024690', 'Bireysel', 'Kadın', 'Ankara', '2023-01-31'),
+    ('Mehmet', 'Kaya', 'mehmet3@mail.com', '05330037035', 'Kurumsal', 'Erkek', 'İzmir', '2023-02-15'),
+    ('Elif', 'Şahin', 'elif4@mail.com', '05340049380', 'Bireysel', 'Kadın', 'Bursa', '2023-03-02'),
+    ('Can', 'Koç', 'can5@mail.com', '05350061725', 'Kurumsal', 'Erkek', 'Antalya', '2023-03-17'),
+    ('Zeynep', 'Acar', 'zeynep6@mail.com', '05360074070', 'Bireysel', 'Kadın', 'İstanbul', '2023-04-01'),
+    ('Burak', 'Aslan', 'burak7@mail.com', '05370086415', 'Bireysel', 'Erkek', 'Adana', '2023-04-16'),
+    ('Selin', 'Yıldız', 'selin8@mail.com', '05380098760', 'Kurumsal', 'Kadın', 'İzmir', '2023-05-01'),
+    ('Emre', 'Çelik', 'emre9@mail.com', '05390111105', 'Bireysel', 'Erkek', 'Ankara', '2023-05-16'),
+    ('Ceren', 'Kurt', 'ceren10@mail.com', '05400123450', 'Bireysel', 'Kadın', 'İstanbul', '2023-05-31'),
+    ('Mert', 'Ak', 'mert11@mail.com', '05410135795', 'Kurumsal', 'Erkek', 'Bursa', '2023-06-15'),
+    ('Derya', 'Öztürk', 'derya12@mail.com', '05420148140', 'Bireysel', 'Kadın', 'Antalya', '2023-06-30'),
+    ('Onur', 'Polat', 'onur13@mail.com', '05430160485', 'Kurumsal', 'Erkek', 'İzmir', '2023-07-15'),
+    ('Seda', 'Arslan', 'seda14@mail.com', '05440172830', 'Bireysel', 'Kadın', 'Ankara', '2023-07-30'),
+    ('Tolga', 'Şen', 'tolga15@mail.com', '05450185175', 'Kurumsal', 'Erkek', 'İstanbul', '2023-08-14'),
+    ('Pelin', 'Güneş', 'pelin16@mail.com', '05460197520', 'Bireysel', 'Kadın', 'Bursa', '2023-08-29'),
+    ('Kaan', 'Demirtaş', 'kaan17@mail.com', '05470209865', 'Kurumsal', 'Erkek', 'Adana', '2023-09-13'),
+    ('İrem', 'Kaplan', 'irem18@mail.com', '05480222210', 'Bireysel', 'Kadın', 'İzmir', '2023-09-28'),
+    ('Serkan', 'Bozkurt', 'serkan19@mail.com', '05490234555', 'Kurumsal', 'Erkek', 'Ankara', '2023-10-13'),
+    ('Ece', 'Bulut', 'ece20@mail.com', '05500246900', 'Bireysel', 'Kadın', 'İstanbul', '2023-10-28'),
+    ('Hakan', 'Önal', 'hakan21@mail.com', '05510259245', 'Kurumsal', 'Erkek', 'Antalya', '2023-11-12'),
+    ('Büşra', 'Kılıç', 'busra22@mail.com', '05520271590', 'Bireysel', 'Kadın', 'Bursa', '2023-11-27'),
+    ('Umut', 'Karaca', 'umut23@mail.com', '05530283935', 'Kurumsal', 'Erkek', 'İzmir', '2023-12-12'),
+    ('Naz', 'Yavuz', 'naz24@mail.com', '05540296280', 'Bireysel', 'Kadın', 'Ankara', '2023-12-27'),
+    ('Furkan', 'Eren', 'furkan25@mail.com', '05550308625', 'Kurumsal', 'Erkek', 'İstanbul', '2023-01-11')
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- VIEW: Müşteri Satış Özeti
+-- ÜRÜNLER - ÖRNEK VERİLER
 -- =====================================================
-
-CREATE VIEW v_musteri_satis_ozeti AS
-SELECT 
-    m.musteriid,
-    m.ad || ' ' || m.soyad AS musteri_adi,
-    m.musteri_tipi,
-    m.sehir,
-    COUNT(s.siparisid) AS siparis_sayisi,
-    COALESCE(SUM(s.toplamtutar), 0) AS toplam_harcama,
-    MAX(s.siparistarihi) AS son_siparis_tarihi
-FROM musteriler m
-LEFT JOIN siparisler s ON m.musteriid = s.musteriid AND s.durum != 'İptal'
-GROUP BY m.musteriid, m.ad, m.soyad, m.musteri_tipi, m.sehir;
-
--- View kullanımı
-SELECT * FROM v_musteri_satis_ozeti WHERE toplam_harcama > 10000;
-
--- =====================================================
--- STORED PROCEDURE: Yeni Sipariş Oluşturma
--- =====================================================
-
-CREATE OR REPLACE PROCEDURE sp_yeni_siparis(
-    p_musteriid INTEGER,
-    p_urunid INTEGER,
-    p_miktar INTEGER,
-    p_odemeyontemi VARCHAR(20)
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_siparisid INTEGER;
-    v_fiyat NUMERIC(10,2);
-    v_toplam NUMERIC(12,2);
-BEGIN
-    -- Ürün fiyatını al
-    SELECT fiyat INTO v_fiyat FROM urunler WHERE urunid = p_urunid;
-    v_toplam := v_fiyat * p_miktar;
-    
-    -- Siparişi oluştur
-    INSERT INTO siparisler (musteriid, toplamtutar, odemeyontemi)
-    VALUES (p_musteriid, v_toplam, p_odemeyontemi)
-    RETURNING siparisid INTO v_siparisid;
-    
-    -- Sipariş detayını ekle
-    INSERT INTO siparisdetaylari (siparisid, urunid, miktar, birimfiyat)
-    VALUES (v_siparisid, p_urunid, p_miktar, v_fiyat);
-    
-    -- Stoku güncelle
-    UPDATE urunler SET stok = stok - p_miktar WHERE urunid = p_urunid;
-    
-    RAISE NOTICE 'Sipariş oluşturuldu. ID: %', v_siparisid;
-END;
-$$;
-
--- Stored Procedure kullanımı
--- CALL sp_yeni_siparis(1, 3, 2, 'Nakit');
+INSERT INTO urunler (urunid, urunadi, kategoriid, fiyat, stok, aciklama) VALUES
+    (1, 'Bluetooth Kulaklık', 1, 1500.00, 100, 'Yüksek kaliteli elektronik ürün'),
+    (2, 'Akıllı Saat', 1, 3200.00, 80, 'Yüksek kaliteli elektronik ürün'),
+    (3, 'Powerbank', 1, 900.00, 150, 'Yüksek kaliteli elektronik ürün'),
+    (4, 'Kablosuz Şarj', 1, 1100.00, 90, 'Yüksek kaliteli elektronik ürün'),
+    (5, 'Webcam', 1, 1400.00, 70, 'Yüksek kaliteli elektronik ürün'),
+    (6, 'Laptop Pro', 2, 28000.00, 30, 'Bilgisayar ve çevre birimleri'),
+    (7, 'Mekanik Klavye', 2, 2500.00, 60, 'Bilgisayar ve çevre birimleri'),
+    (8, 'Gaming Mouse', 2, 1800.00, 75, 'Bilgisayar ve çevre birimleri'),
+    (9, 'SSD 1TB', 2, 3200.00, 50, 'Bilgisayar ve çevre birimleri'),
+    (10, 'Monitör 27"', 2, 8500.00, 25, 'Bilgisayar ve çevre birimleri'),
+    (11, 'Telefon X', 3, 18000.00, 40, 'Akıllı telefon ve mobil cihaz'),
+    (12, 'Telefon Y', 3, 22000.00, 35, 'Akıllı telefon ve mobil cihaz'),
+    (13, 'Telefon Z', 3, 26000.00, 20, 'Akıllı telefon ve mobil cihaz'),
+    (14, 'Tablet A', 3, 12000.00, 30, 'Akıllı telefon ve mobil cihaz'),
+    (15, 'Tablet B', 3, 16000.00, 25, 'Akıllı telefon ve mobil cihaz'),
+    (16, 'Tişört', 4, 450.00, 200, 'Giyim ve tekstil ürünü'),
+    (17, 'Kot Pantolon', 4, 900.00, 120, 'Giyim ve tekstil ürünü'),
+    (18, 'Mont', 4, 2800.00, 50, 'Giyim ve tekstil ürünü'),
+    (19, 'Spor Ayakkabı', 4, 3500.00, 60, 'Giyim ve tekstil ürünü'),
+    (20, 'Eşofman', 4, 1300.00, 90, 'Giyim ve tekstil ürünü'),
+    (21, 'Masa Lambası', 5, 1200.00, 70, 'Ev yaşam ve dekorasyon ürünü'),
+    (22, 'Halı', 5, 4500.00, 40, 'Ev yaşam ve dekorasyon ürünü'),
+    (23, 'Perde', 5, 2300.00, 60, 'Ev yaşam ve dekorasyon ürünü'),
+    (24, 'Dekor Vazo', 5, 950.00, 80, 'Ev yaşam ve dekorasyon ürünü'),
+    (25, 'Çay Seti', 5, 1700.00, 55, 'Ev yaşam ve dekorasyon ürünü'),
+    (26, 'Dambıl Seti', 6, 3200.00, 45, 'Spor ve fitness ekipmanı'),
+    (27, 'Yoga Matı', 6, 850.00, 100, 'Spor ve fitness ekipmanı'),
+    (28, 'Koşu Bandı', 6, 24000.00, 10, 'Spor ve fitness ekipmanı'),
+    (29, 'Futbol Topu', 6, 650.00, 150, 'Spor ve fitness ekipmanı'),
+    (30, 'Spor Çanta', 6, 1800.00, 70, 'Spor ve fitness ekipmanı')
+ON CONFLICT DO NOTHING;
 
 -- =====================================================
--- TRANSACTION ÖRNEĞİ
+-- SİPARİŞLER - ÖRNEK VERİLER
 -- =====================================================
+INSERT INTO siparisler (siparisid, musteriid, siparistarihi, toplamtutar, durum, odemeyontemi) VALUES
+    (1, 1, '2024-01-05', 48000.00, 'Onaylandı', 'Kredi Kartı'),
+    (2, 2, '2024-01-06', 3200.00, 'Teslim Edildi', 'Havale'),
+    (3, 3, '2024-01-07', 9000.00, 'Kargoda', 'Nakit'),
+    (4, 4, '2024-01-08', 1300.00, 'Beklemede', 'Kredi Kartı'),
+    (5, 5, '2024-01-09', 1500.00, 'Onaylandı', 'Havale'),
+    (6, 6, '2024-01-10', 54900.00, 'Teslim Edildi', 'Kredi Kartı'),
+    (7, 7, '2024-01-11', 1500.00, 'Kargoda', 'Nakit'),
+    (8, 8, '2024-01-12', 5500.00, 'Onaylandı', 'Kredi Kartı'),
+    (9, 9, '2024-01-13', 45500.00, 'Beklemede', 'Havale'),
+    (10, 10, '2024-01-14', 5150.00, 'Teslim Edildi', 'Kredi Kartı'),
+    (11, 11, '2024-01-15', 13200.00, 'Onaylandı', 'Nakit'),
+    (12, 12, '2024-01-16', 2150.00, 'Kargoda', 'Kredi Kartı'),
+    (13, 13, '2024-01-17', 1500.00, 'Teslim Edildi', 'Havale'),
+    (14, 14, '2024-01-18', 37400.00, 'Onaylandı', 'Kredi Kartı'),
+    (15, 15, '2024-01-19', 16000.00, 'Beklemede', 'Nakit'),
+    (16, 16, '2024-01-20', 1500.00, 'Kargoda', 'Havale'),
+    (17, 17, '2024-01-21', 3700.00, 'Teslim Edildi', 'Kredi Kartı'),
+    (18, 18, '2024-01-22', 13300.00, 'Onaylandı', 'Nakit'),
+    (19, 19, '2024-01-23', 95300.00, 'Beklemede', 'Havale'),
+    (20, 20, '2024-01-24', 1500.00, 'Kargoda', 'Kredi Kartı'),
+    (21, 21, '2024-01-25', 1900.00, 'Teslim Edildi', 'Nakit'),
+    (22, 22, '2024-01-26', 3600.00, 'Onaylandı', 'Havale'),
+    (23, 23, '2024-01-27', 1500.00, 'Beklemede', 'Kredi Kartı'),
+    (24, 24, '2024-01-28', 57200.00, 'Kargoda', 'Nakit'),
+    (25, 25, '2024-01-29', 1500.00, 'Teslim Edildi', 'Havale'),
+    (26, 1, '2024-02-01', 2900.00, 'Onaylandı', 'Kredi Kartı'),
+    (27, 2, '2024-02-02', 1500.00, 'Kargoda', 'Havale'),
+    (28, 3, '2024-02-03', 1500.00, 'Teslim Edildi', 'Nakit'),
+    (29, 4, '2024-02-04', 14800.00, 'Beklemede', 'Kredi Kartı'),
+    (30, 5, '2024-02-05', 10500.00, 'Onaylandı', 'Havale'),
+    (31, 6, '2024-02-06', 1500.00, 'Kargoda', 'Kredi Kartı'),
+    (32, 7, '2024-02-07', 1500.00, 'Teslim Edildi', 'Nakit'),
+    (33, 8, '2024-02-08', 1500.00, 'Beklemede', 'Havale'),
+    (34, 9, '2024-02-09', 3900.00, 'Onaylandı', 'Kredi Kartı'),
+    (35, 10, '2024-02-10', 1500.00, 'Kargoda', 'Nakit'),
+    (36, 11, '2024-02-11', 4150.00, 'Teslim Edildi', 'Havale'),
+    (37, 12, '2024-02-12', 1500.00, 'Beklemede', 'Kredi Kartı'),
+    (38, 13, '2024-02-13', 1500.00, 'Onaylandı', 'Nakit'),
+    (39, 14, '2024-02-14', 1500.00, 'Kargoda', 'Havale'),
+    (40, 15, '2024-02-15', 46500.00, 'Teslim Edildi', 'Kredi Kartı'),
+    (41, 16, '2024-02-16', 1950.00, 'Beklemede', 'Nakit'),
+    (42, 17, '2024-02-17', 1500.00, 'Onaylandı', 'Havale'),
+    (43, 18, '2024-02-18', 1500.00, 'Kargoda', 'Kredi Kartı'),
+    (44, 19, '2024-02-19', 28000.00, 'Teslim Edildi', 'Nakit'),
+    (45, 20, '2024-02-20', 1350.00, 'Beklemede', 'Havale'),
+    (46, 21, '2024-02-21', 1500.00, 'Onaylandı', 'Kredi Kartı'),
+    (47, 22, '2024-02-22', 6650.00, 'Kargoda', 'Nakit'),
+    (48, 23, '2024-02-23', 10300.00, 'Teslim Edildi', 'Havale'),
+    (49, 24, '2024-02-24', 4600.00, 'Beklemede', 'Kredi Kartı'),
+    (50, 25, '2024-02-25', 3000.00, 'Onaylandı', 'Nakit')
+ON CONFLICT DO NOTHING;
 
--- BEGIN;
--- INSERT INTO siparisler (musteriid, toplamtutar, odemeyontemi) 
--- VALUES (1, 25299.98, 'Kredi Kartı') RETURNING siparisid;
--- INSERT INTO siparisdetaylari (siparisid, urunid, miktar, birimfiyat) VALUES (13, 1, 1, 24999.99);
--- UPDATE urunler SET stok = stok - 1 WHERE urunid = 1;
--- COMMIT;
-```
+-- =====================================================
+-- SİPARİŞ DETAYLARI - ÖRNEK VERİLER
+-- =====================================================
+INSERT INTO siparisdetaylari (detayid, siparisid, urunid, miktar, birimfiyat, aratoplam) VALUES
+    (1, 6, 3, 1, 900.00, 900.00),
+    (2, 6, 13, 1, 26000.00, 26000.00),
+    (3, 8, 23, 1, 2300.00, 2300.00),
+    (4, 8, 26, 1, 3200.00, 3200.00),
+    (5, 9, 13, 1, 26000.00, 26000.00),
+    (6, 9, 11, 1, 18000.00, 18000.00),
+    (7, 10, 9, 1, 3200.00, 3200.00),
+    (8, 10, 4, 1, 1100.00, 1100.00),
+    (9, 11, 10, 1, 8500.00, 8500.00),
+    (10, 11, 4, 1, 1100.00, 1100.00),
+    (11, 12, 1, 1, 1500.00, 1500.00),
+    (12, 12, 29, 1, 650.00, 650.00),
+    (13, 14, 13, 1, 26000.00, 26000.00),
+    (14, 14, 3, 1, 900.00, 900.00),
+    (15, 17, 7, 1, 2500.00, 2500.00),
+    (16, 17, 21, 1, 1200.00, 1200.00),
+    (17, 18, 14, 1, 12000.00, 12000.00),
+    (18, 18, 20, 1, 1300.00, 1300.00),
+    (19, 19, 6, 1, 28000.00, 28000.00),
+    (20, 19, 20, 1, 1300.00, 1300.00),
+    (21, 24, 26, 1, 3200.00, 3200.00),
+    (22, 24, 11, 1, 18000.00, 18000.00),
+    (23, 26, 27, 1, 850.00, 850.00),
+    (24, 26, 4, 1, 1100.00, 1100.00),
+    (25, 29, 14, 1, 12000.00, 12000.00),
+    (26, 29, 4, 1, 1100.00, 1100.00),
+    (27, 36, 29, 1, 650.00, 650.00),
+    (28, 36, 8, 1, 1800.00, 1800.00),
+    (29, 40, 22, 1, 4500.00, 4500.00),
+    (30, 40, 28, 1, 24000.00, 24000.00),
+    (31, 41, 20, 1, 1300.00, 1300.00),
+    (32, 41, 29, 1, 650.00, 650.00),
+    (33, 47, 27, 1, 850.00, 850.00),
+    (34, 47, 9, 1, 3200.00, 3200.00),
+    (35, 48, 8, 1, 1800.00, 1800.00),
+    (36, 48, 10, 1, 8500.00, 8500.00),
+    (37, 49, 25, 1, 1700.00, 1700.00),
+    (38, 49, 4, 1, 1100.00, 1100.00),
+    (39, 50, 25, 1, 1700.00, 1700.00),
+    (40, 50, 16, 1, 450.00, 450.00),
+    (41, 15, 15, 1, 16000.00, 16000.00),
+    (42, 2, 26, 1, 3200.00, 3200.00),
+    (43, 34, 20, 3, 1300.00, 3900.00),
+    (44, 30, 19, 3, 3500.00, 10500.00),
+    (45, 19, 12, 3, 22000.00, 66000.00),
+    (46, 49, 8, 1, 1800.00, 1800.00),
+    (47, 47, 20, 2, 1300.00, 2600.00),
+    (48, 21, 24, 2, 950.00, 1900.00),
+    (49, 50, 27, 1, 850.00, 850.00),
+    (50, 3, 22, 2, 4500.00, 9000.00),
+    (51, 22, 30, 2, 1800.00, 3600.00),
+    (52, 24, 14, 3, 12000.00, 36000.00),
+    (53, 44, 6, 1, 28000.00, 28000.00),
+    (54, 45, 16, 3, 450.00, 1350.00),
+    (55, 29, 25, 1, 1700.00, 1700.00),
+    (56, 36, 27, 2, 850.00, 1700.00),
+    (57, 14, 19, 3, 3500.00, 10500.00),
+    (58, 4, 29, 2, 650.00, 1300.00),
+    (59, 11, 21, 3, 1200.00, 3600.00),
+    (60, 1, 28, 2, 24000.00, 48000.00),
+    (61, 26, 24, 1, 950.00, 950.00),
+    (62, 6, 6, 1, 28000.00, 28000.00),
+    (63, 10, 27, 1, 850.00, 850.00),
+    (64, 9, 1, 1, 1500.00, 1500.00),
+    (65, 40, 11, 1, 18000.00, 18000.00),
+    (66, 20, 1, 1, 1500.00, 1500.00),
+    (67, 25, 1, 1, 1500.00, 1500.00),
+    (68, 27, 1, 1, 1500.00, 1500.00),
+    (69, 39, 1, 1, 1500.00, 1500.00),
+    (70, 33, 1, 1, 1500.00, 1500.00),
+    (71, 31, 1, 1, 1500.00, 1500.00),
+    (72, 46, 1, 1, 1500.00, 1500.00),
+    (73, 13, 1, 1, 1500.00, 1500.00),
+    (74, 5, 1, 1, 1500.00, 1500.00),
+    (75, 37, 1, 1, 1500.00, 1500.00),
+    (76, 32, 1, 1, 1500.00, 1500.00),
+    (77, 38, 1, 1, 1500.00, 1500.00),
+    (78, 28, 1, 1, 1500.00, 1500.00),
+    (79, 42, 1, 1, 1500.00, 1500.00),
+    (80, 16, 1, 1, 1500.00, 1500.00),
+    (81, 23, 1, 1, 1500.00, 1500.00),
+    (82, 43, 1, 1, 1500.00, 1500.00),
+    (83, 35, 1, 1, 1500.00, 1500.00),
+    (84, 7, 1, 1, 1500.00, 1500.00)
+ON CONFLICT DO NOTHING;

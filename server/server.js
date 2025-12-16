@@ -114,11 +114,11 @@ app.get('/api/musteriler/:id', async (req, res) => {
 // Yeni müşteri ekle
 app.post('/api/musteriler', async (req, res) => {
     try {
-        const { ad, soyad, email, telefon, cinsiyet, sehir } = req.body;
+        const { ad, soyad, email, telefon, cinsiyet, musteritipi, sehir } = req.body;
         const result = await pool.query(
-            `INSERT INTO musteriler (ad, soyad, email, telefon, cinsiyet, sehir) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-            [ad, soyad, email, telefon, cinsiyet, sehir]
+            `INSERT INTO musteriler (ad, soyad, email, telefon, cinsiyet, musteritipi, sehir) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+            [ad, soyad, email, telefon, cinsiyet, musteritipi, sehir]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -130,11 +130,11 @@ app.post('/api/musteriler', async (req, res) => {
 app.put('/api/musteriler/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { ad, soyad, email, telefon, cinsiyet, sehir } = req.body;
+        const { ad, soyad, email, telefon, cinsiyet, musteritipi, sehir } = req.body;
         const result = await pool.query(
-            `UPDATE musteriler SET ad=$1, soyad=$2, email=$3, telefon=$4, cinsiyet=$5, sehir=$6 
-             WHERE musteriid=$7 RETURNING *`,
-            [ad, soyad, email, telefon, cinsiyet, sehir, id]
+            `UPDATE musteriler SET ad=$1, soyad=$2, email=$3, telefon=$4, cinsiyet=$5, musteritipi=$6, sehir=$7 
+             WHERE musteriid=$8 RETURNING *`,
+            [ad, soyad, email, telefon, cinsiyet, musteritipi, sehir, id]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -388,11 +388,11 @@ app.get('/api/raporlar/cinsiyet', async (req, res) => {
 app.get('/api/raporlar/musteri-tipi', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT m.musteri_tipi, SUM(s.toplamtutar) as toplam
+            SELECT m.musteritipi, SUM(s.toplamtutar) as toplam
             FROM musteriler m
             JOIN siparisler s ON m.musteriid = s.musteriid
             WHERE s.durum != 'İptal'
-            GROUP BY m.musteri_tipi
+            GROUP BY m.musteritipi
             ORDER BY toplam DESC
         `);
         res.json(result.rows);

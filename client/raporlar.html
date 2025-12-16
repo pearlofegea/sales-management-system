@@ -32,7 +32,7 @@
 
             <div class="stats" id="statsContainer">
                 <div class="stat-card">
-                    <div class="stat-icon green"><i class="fas fa-lira-sign"></i></div>
+                    <div class="stat-icon green"><i class="fas fa-wallet"></i></div>
                     <div class="stat-info"><h3 id="toplamGelir">₺0</h3><p>Toplam Gelir</p></div>
                 </div>
                 <div class="stat-card">
@@ -151,7 +151,7 @@
                 new Chart(document.getElementById('musteriTipiChart'), {
                     type: 'doughnut',
                     data: {
-                        labels: data.map(d => d.musteri_tipi || 'Belirtilmemiş'),
+                        labels: data.map(d => d.musteritipi || 'Belirtilmemiş'),
                         datasets: [{
                             data: data.map(d => Number(d.toplam)),
                             backgroundColor: ['#3b82f6', '#f59e0b', '#ec4899'],
