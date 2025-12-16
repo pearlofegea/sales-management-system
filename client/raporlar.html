@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raporlar - SatışPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="overlay" id="overlay"></div>
+        
+        <nav class="sidebar" id="sidebar">
+            <div class="logo"><i class="fas fa-chart-line"></i> SatışPro</div>
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="satislar.html" class="nav-item"><i class="fas fa-shopping-cart"></i> Satışlar</a>
+            <a href="musteriler.html" class="nav-item"><i class="fas fa-users"></i> Müşteriler</a>
+            <a href="urunler.html" class="nav-item"><i class="fas fa-box"></i> Ürünler</a>
+            <a href="raporlar.html" class="nav-item active"><i class="fas fa-chart-bar"></i> Raporlar</a>
+        </nav>
+
+        <main class="main">
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                    <h1>Raporlar</h1>
+                </div>
+            </div>
+
+            <div class="stats" id="statsContainer">
+                <div class="stat-card">
+                    <div class="stat-icon green"><i class="fas fa-lira-sign"></i></div>
+                    <div class="stat-info"><h3 id="toplamGelir">₺0</h3><p>Toplam Gelir</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="stat-info"><h3 id="toplamSiparis">0</h3><p>Toplam Sipariş</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange"><i class="fas fa-users"></i></div>
+                    <div class="stat-info"><h3 id="toplamMusteri">0</h3><p>Toplam Müşteri</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple"><i class="fas fa-box"></i></div>
+                    <div class="stat-info"><h3 id="toplamUrun">0</h3><p>Toplam Ürün</p></div>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart-box">
+                    <h4><i class="fas fa-chart-bar"></i> Aylık Satış</h4>
+                    <canvas id="salesChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4><i class="fas fa-building"></i> Müşteri Tipine Göre</h4>
+                    <canvas id="musteriTipiChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart-box">
+                    <h4><i class="fas fa-map-marker-alt"></i> Şehirlere Göre</h4>
+                    <canvas id="cityChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4><i class="fas fa-credit-card"></i> Ödeme Yöntemleri</h4>
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts">
+                <div class="chart-box">
+                    <h4><i class="fas fa-tags"></i> Kategori Satışları</h4>
+                    <canvas id="kategoriChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4><i class="fas fa-venus-mars"></i> Cinsiyete Göre</h4>
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-box">
+                <h4 style="margin-bottom:20px"><i class="fas fa-trophy"></i> En Çok Satan Ürünler</h4>
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Ürün</th><th>Kategori</th><th>Adet</th><th>Gelir</th></tr>
+                    </thead>
+                    <tbody id="topUrunlerBody">
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        
+        Chart.defaults.color = '#888';
+        Chart.defaults.borderColor = '#2a2a4a';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadAylikSatis();
+            loadMusteriTipi();
+            loadSehirSatis();
+            loadOdemeYontemi();
+            loadKategoriSatis();
+            loadCinsiyetSatis();
+            loadTopUrunler();
+        });
+
+        async function loadStats() {
+            try {
+                const stats = await fetch(`${API}/dashboard/stats`).then(r => r.json());
+                document.getElementById('toplamGelir').textContent = '₺' + Number(stats.toplamsatis || 0).toLocaleString('tr-TR');
+                document.getElementById('toplamSiparis').textContent = stats.siparissayisi || 0;
+                document.getElementById('toplamMusteri').textContent = stats.musterisayisi || 0;
+                document.getElementById('toplamUrun').textContent = stats.urunsayisi || 0;
+            } catch (err) {
+                console.error('Stats yüklenemedi:', err);
+            }
+        }
+
+        async function loadAylikSatis() {
+            try {
+                const data = await fetch(`${API}/dashboard/aylik-satis`).then(r => r.json());
+                new Chart(document.getElementById('salesChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.ay),
+                        datasets: [{
+                            label: 'Satış',
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: '#4ecca3',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            } catch (err) {
+                console.error('Aylık satış yüklenemedi:', err);
+            }
+        }
+
+        async function loadMusteriTipi() {
+            try {
+                const data = await fetch(`${API}/raporlar/musteri-tipi`).then(r => r.json());
+                new Chart(document.getElementById('musteriTipiChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.map(d => d.musteri_tipi || 'Belirtilmemiş'),
+                        datasets: [{
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: ['#3b82f6', '#f59e0b', '#ec4899'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch (err) {
+                console.error('Müşteri tipi yüklenemedi:', err);
+            }
+        }
+
+        async function loadSehirSatis() {
+            try {
+                const data = await fetch(`${API}/raporlar/sehir`).then(r => r.json());
+                new Chart(document.getElementById('cityChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.sehir),
+                        datasets: [{
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: ['#4ecca3', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+                });
+            } catch (err) {
+                console.error('Şehir satış yüklenemedi:', err);
+            }
+        }
+
+        async function loadOdemeYontemi() {
+            try {
+                const data = await fetch(`${API}/raporlar/odeme`).then(r => r.json());
+                new Chart(document.getElementById('paymentChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: data.map(d => d.odemeyontemi),
+                        datasets: [{
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: ['#4ecca3', '#3b82f6', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch (err) {
+                console.error('Ödeme yöntemi yüklenemedi:', err);
+            }
+        }
+
+        async function loadKategoriSatis() {
+            try {
+                const data = await fetch(`${API}/dashboard/kategori-satis`).then(r => r.json());
+                new Chart(document.getElementById('kategoriChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.map(d => d.kategoriad),
+                        datasets: [{
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: ['#4ecca3', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch (err) {
+                console.error('Kategori satış yüklenemedi:', err);
+            }
+        }
+
+        async function loadCinsiyetSatis() {
+            try {
+                const data = await fetch(`${API}/raporlar/cinsiyet`).then(r => r.json());
+                new Chart(document.getElementById('genderChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.map(d => d.cinsiyet || 'Belirtilmemiş'),
+                        datasets: [{
+                            data: data.map(d => Number(d.toplam)),
+                            backgroundColor: ['#3b82f6', '#ec4899', '#888'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch (err) {
+                console.error('Cinsiyet satış yüklenemedi:', err);
+            }
+        }
+
+        async function loadTopUrunler() {
+            try {
+                const data = await fetch(`${API}/raporlar/top-urunler`).then(r => r.json());
+                document.getElementById('topUrunlerBody').innerHTML = data.map((u, i) => `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${u.urunadi}</td>
+                        <td>${u.kategoriad || '-'}</td>
+                        <td>${u.toplam_adet}</td>
+                        <td>₺${Number(u.toplam_gelir).toLocaleString('tr-TR')}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Top ürünler yüklenemedi:', err);
+            }
+        }
+
+        // Mobile menu
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        });
+        document.getElementById('overlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ürünler - SatışPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="overlay" id="overlay"></div>
+        
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="logo"><i class="fas fa-chart-line"></i> SatışPro</div>
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="satislar.html" class="nav-item"><i class="fas fa-shopping-cart"></i> Satışlar</a>
+            <a href="musteriler.html" class="nav-item"><i class="fas fa-users"></i> Müşteriler</a>
+            <a href="urunler.html" class="nav-item active"><i class="fas fa-box"></i> Ürünler</a>
+            <a href="raporlar.html" class="nav-item"><i class="fas fa-chart-bar"></i> Raporlar</a>
+        </nav>
+
+        <!-- Main -->
+        <main class="main">
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                    <h1>Ürün Yönetimi</h1>
+                </div>
+                <button class="btn btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Yeni Ürün</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="filterKategori" onchange="filterUrunler()">
+                    <option value="">Tüm Kategoriler</option>
+                </select>
+                <select id="filterStok" onchange="filterUrunler()">
+                    <option value="">Stok Durumu</option>
+                    <option value="stokta">Stokta (50+)</option>
+                    <option value="az">Az Stok (10-50)</option>
+                    <option value="kritik">Kritik (0-10)</option>
+                </select>
+                <input type="text" id="filterArama" placeholder="Ürün ara..." oninput="filterUrunler()">
+                <button class="btn btn-secondary btn-sm" onclick="clearFilters()"><i class="fas fa-times"></i> Temizle</button>
+            </div>
+
+            <!-- Stats -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <span id="toplamUrun" class="badge blue">Toplam: 0 ürün</span>
+                <span id="kritikStok" class="badge orange">Kritik Stok: 0</span>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="cards-grid" id="urunlerGrid">
+            </div>
+        </main>
+    </div>
+
+    <!-- Yeni Ürün Modal -->
+    <div class="modal-overlay" id="urunModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle"><i class="fas fa-box"></i> Yeni Ürün</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="urunForm">
+                    <input type="hidden" id="urunId">
+                    <div class="form-group">
+                        <label>Ürün Adı</label>
+                        <input type="text" id="urunadi" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Kategori</label>
+                            <select id="kategoriid" required>
+                                <option value="">Seçiniz</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fiyat (₺)</label>
+                            <input type="number" id="fiyat" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stok</label>
+                        <input type="number" id="stok" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Açıklama</label>
+                        <textarea id="aciklama" rows="3" style="width:100%; padding:10px; background:var(--bg-primary); border:1px solid var(--border); border-radius:8px; color:var(--text); resize:vertical;"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+                <button class="btn btn-primary" onclick="kaydet()"><i class="fas fa-save"></i> Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body { padding: 20px; }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .badge.blue { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .badge.orange { background: rgba(245,158,11,0.2); color: #f59e0b; }
+    </style>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let tumUrunler = [];
+        let kategoriler = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadKategoriler();
+            loadUrunler();
+        });
+
+        async function loadKategoriler() {
+            try {
+                const response = await fetch(`${API}/kategoriler`);
+                kategoriler = await response.json();
+                
+                // Filter dropdown
+                const filterSelect = document.getElementById('filterKategori');
+                filterSelect.innerHTML = '<option value="">Tüm Kategoriler</option>' +
+                    kategoriler.map(k => `<option value="${k.kategoriid}">${k.kategoriad}</option>`).join('');
+                
+                // Modal dropdown
+                const modalSelect = document.getElementById('kategoriid');
+                modalSelect.innerHTML = '<option value="">Seçiniz</option>' +
+                    kategoriler.map(k => `<option value="${k.kategoriid}">${k.kategoriad}</option>`).join('');
+            } catch (err) {
+                console.error('Kategoriler yüklenemedi:', err);
+            }
+        }
+
+        async function loadUrunler() {
+            try {
+                const response = await fetch(`${API}/urunler`);
+                tumUrunler = await response.json();
+                renderUrunler(tumUrunler);
+            } catch (err) {
+                console.error('Ürünler yüklenemedi:', err);
+            }
+        }
+
+        function renderUrunler(data) {
+            const kritikSayisi = data.filter(u => u.stok <= 10).length;
+            document.getElementById('toplamUrun').textContent = `Toplam: ${data.length} ürün`;
+            document.getElementById('kritikStok').textContent = `Kritik Stok: ${kritikSayisi}`;
+
+            document.getElementById('urunlerGrid').innerHTML = data.map(u => {
+                const isKritik = u.stok <= 10;
+                const isAz = u.stok > 10 && u.stok <= 50;
+                
+                return `
+                <div class="card" style="${isKritik ? 'border: 1px solid rgba(245, 158, 11, 0.5);' : ''}">
+                    <div class="card-icon" style="${isKritik ? 'color: #f59e0b;' : ''}"><i class="fas fa-box"></i></div>
+                    <div class="card-title">${u.urunadi}</div>
+                    <div class="card-subtitle">${u.kategoriad || 'Kategori yok'}</div>
+                    <div style="margin-top: 15px;">
+                        <div style="font-size: 1.4rem; font-weight: 700; color: var(--accent);">₺${Number(u.fiyat).toLocaleString('tr-TR')}</div>
+                        <div style="font-size: 0.85rem; margin-top: 5px; color: ${isKritik ? '#f59e0b' : isAz ? '#f59e0b' : 'var(--text-muted)'};">
+                            ${isKritik ? '⚠️ ' : ''}Stok: <strong>${u.stok}</strong>${isKritik ? ' (Kritik)' : isAz ? ' (Az)' : ''}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-icon btn-sm" onclick="duzenle(${u.urunid})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-icon btn-sm danger" onclick="sil(${u.urunid})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function filterUrunler() {
+            const kategori = document.getElementById('filterKategori').value;
+            const stok = document.getElementById('filterStok').value;
+            const arama = document.getElementById('filterArama').value.toLowerCase();
+
+            let filtered = tumUrunler;
+
+            if (kategori) {
+                filtered = filtered.filter(u => u.kategoriid == kategori);
+            }
+            if (stok === 'stokta') {
+                filtered = filtered.filter(u => u.stok >= 50);
+            } else if (stok === 'az') {
+                filtered = filtered.filter(u => u.stok >= 10 && u.stok < 50);
+            } else if (stok === 'kritik') {
+                filtered = filtered.filter(u => u.stok < 10);
+            }
+            if (arama) {
+                filtered = filtered.filter(u => u.urunadi.toLowerCase().includes(arama));
+            }
+
+            renderUrunler(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterKategori').value = '';
+            document.getElementById('filterStok').value = '';
+            document.getElementById('filterArama').value = '';
+            renderUrunler(tumUrunler);
+        }
+
+        function openModal() {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-box"></i> Yeni Ürün';
+            document.getElementById('urunForm').reset();
+            document.getElementById('urunId').value = '';
+            document.getElementById('urunModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('urunModal').classList.remove('active');
+        }
+
+        function duzenle(id) {
+            const urun = tumUrunler.find(u => u.urunid === id);
+            if (!urun) return;
+
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Ürün Düzenle';
+            document.getElementById('urunId').value = urun.urunid;
+            document.getElementById('urunadi').value = urun.urunadi;
+            document.getElementById('kategoriid').value = urun.kategoriid || '';
+            document.getElementById('fiyat').value = urun.fiyat;
+            document.getElementById('stok').value = urun.stok;
+            document.getElementById('aciklama').value = urun.aciklama || '';
+            document.getElementById('urunModal').classList.add('active');
+        }
+
+        async function kaydet() {
+            const id = document.getElementById('urunId').value;
+            const data = {
+                urunadi: document.getElementById('urunadi').value,
+                kategoriid: document.getElementById('kategoriid').value || null,
+                fiyat: parseFloat(document.getElementById('fiyat').value),
+                stok: parseInt(document.getElementById('stok').value) || 0,
+                aciklama: document.getElementById('aciklama').value
+            };
+
+            if (!data.urunadi || !data.fiyat) {
+                alert('Ürün adı ve fiyat zorunludur!');
+                return;
+            }
+
+            try {
+                const url = id ? `${API}/urunler/${id}` : `${API}/urunler`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    loadUrunler();
+                } else {
+                    alert('Hata oluştu!');
+                }
+            } catch (err) {
+                alert('Bağlantı hatası!');
+            }
+        }
+
+        async function sil(id) {
+            if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+
+            try {
+                await fetch(`${API}/urunler/${id}`, { method: 'DELETE' });
+                loadUrunler();
+            } catch (err) {
+                alert('Silme hatası!');
+            }
+        }
+
+        // Mobile menu
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        });
+        document.getElementById('overlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satışlar - SatışPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="overlay" id="overlay"></div>
+        
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="logo"><i class="fas fa-chart-line"></i> SatışPro</div>
+            <a href="index.html" class="nav-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="satislar.html" class="nav-item active"><i class="fas fa-shopping-cart"></i> Satışlar</a>
+            <a href="musteriler.html" class="nav-item"><i class="fas fa-users"></i> Müşteriler</a>
+            <a href="urunler.html" class="nav-item"><i class="fas fa-box"></i> Ürünler</a>
+            <a href="raporlar.html" class="nav-item"><i class="fas fa-chart-bar"></i> Raporlar</a>
+        </nav>
+
+        <!-- Main -->
+        <main class="main">
+            <div class="header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+                    <h1>Satış Yönetimi</h1>
+                </div>
+                <button class="btn btn-primary" onclick="openYeniSatisModal()">
+                    <i class="fas fa-plus"></i> Yeni Satış
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="filterDurum" onchange="filterSatislar()">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="Beklemede">Beklemede</option>
+                    <option value="Onaylandı">Onaylandı</option>
+                    <option value="Kargoda">Kargoda</option>
+                    <option value="Teslim Edildi">Teslim Edildi</option>
+                    <option value="İptal">İptal</option>
+                </select>
+                <select id="filterOdeme" onchange="filterSatislar()">
+                    <option value="">Ödeme Yöntemi</option>
+                    <option value="Kredi Kartı">Kredi Kartı</option>
+                    <option value="Nakit">Nakit</option>
+                    <option value="Havale">Havale</option>
+                </select>
+                <select id="filterMusteriTipi" onchange="filterSatislar()">
+                    <option value="">Müşteri Tipi</option>
+                    <option value="Bireysel">Bireysel</option>
+                    <option value="Kurumsal">Kurumsal</option>
+                </select>
+                <input type="date" id="filterBaslangic" onchange="filterSatislar()">
+                <input type="date" id="filterBitis" onchange="filterSatislar()">
+                <button class="btn btn-secondary btn-sm" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Temizle
+                </button>
+            </div>
+
+            <!-- Table -->
+            <div class="table-box">
+                <div class="table-header">
+                    <h4><i class="fas fa-list"></i> Satış Listesi</h4>
+                    <span id="kayitSayisi" style="color: var(--text-muted);">Toplam: 0 kayıt</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Müşteri</th>
+                            <th>Tip</th>
+                            <th>Tarih</th>
+                            <th>Toplam</th>
+                            <th>Ödeme</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="satislarBody">
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Yeni Satış Modal -->
+    <div class="modal-overlay" id="yeniSatisModal">
+        <div class="modal" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Yeni Satış</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="yeniSatisForm">
+                    <div class="form-group">
+                        <label>Müşteri</label>
+                        <select id="musteriSelect" required>
+                            <option value="">Müşteri Seçin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ödeme Yöntemi</label>
+                        <select id="odemeSelect" required>
+                            <option value="">Seçin</option>
+                            <option value="Kredi Kartı">Kredi Kartı</option>
+                            <option value="Nakit">Nakit</option>
+                            <option value="Havale">Havale</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Ürünler</label>
+                        <div id="urunListesi"></div>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="urunEkle()" style="margin-top:10px;">
+                            <i class="fas fa-plus"></i> Ürün Ekle
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top:20px; padding:15px; background:var(--bg-primary); border-radius:10px;">
+                        <strong>Toplam: </strong>
+                        <span id="toplamTutar" style="font-size:1.3rem; color:var(--accent);">₺0</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">İptal</button>
+                <button class="btn btn-primary" onclick="satisKaydet()">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detay Modal -->
+    <div class="modal-overlay" id="detayModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-eye"></i> Sipariş Detayı</h3>
+                <button class="modal-close" onclick="closeDetayModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="detayContent">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDetayModal()">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .urun-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .urun-row select { flex: 2; }
+        .urun-row input { flex: 1; width: 80px; }
+        .urun-row button { flex-shrink: 0; }
+        .detay-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .badge.blue { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .badge.orange { background: rgba(245,158,11,0.2); color: #f59e0b; }
+    </style>
+
+    <script>
+        const API = 'http://localhost:3000/api';
+        let tumSatislar = [];
+        let urunler = [];
+        let musteriler = [];
+        let urunSayaci = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSatislar();
+            loadMusteriler();
+            loadUrunler();
+        });
+
+        async function loadSatislar() {
+            try {
+                const response = await fetch(`${API}/siparisler`);
+                tumSatislar = await response.json();
+                renderSatislar(tumSatislar);
+            } catch (err) {
+                console.error('Satışlar yüklenemedi:', err);
+            }
+        }
+
+        async function loadMusteriler() {
+            try {
+                const response = await fetch(`${API}/musteriler`);
+                musteriler = await response.json();
+                
+                const select = document.getElementById('musteriSelect');
+                select.innerHTML = '<option value="">Müşteri Seçin</option>' +
+                    musteriler.map(m => `<option value="${m.musteriid}" data-tip="${m.musteri_tipi || 'Bireysel'}">${m.ad} ${m.soyad} (${m.musteri_tipi || 'Bireysel'})</option>`).join('');
+            } catch (err) {
+                console.error('Müşteriler yüklenemedi:', err);
+            }
+        }
+
+        async function loadUrunler() {
+            try {
+                const response = await fetch(`${API}/urunler`);
+                urunler = await response.json();
+            } catch (err) {
+                console.error('Ürünler yüklenemedi:', err);
+            }
+        }
+
+        function renderSatislar(data) {
+            document.getElementById('kayitSayisi').textContent = `Toplam: ${data.length} kayıt`;
+            
+            document.getElementById('satislarBody').innerHTML = data.map(s => {
+                const musteri = musteriler.find(m => m.musteriid === s.musteriid);
+                const musteriTipi = musteri ? (musteri.musteri_tipi || 'Bireysel') : 'Bireysel';
+                
+                return `
+                <tr>
+                    <td>${s.siparisid}</td>
+                    <td>${s.musteriadi}</td>
+                    <td><span class="badge ${musteriTipi === 'Kurumsal' ? 'orange' : 'blue'}">${musteriTipi}</span></td>
+                    <td>${new Date(s.siparistarihi).toLocaleDateString('tr-TR')}</td>
+                    <td>₺${Number(s.toplamtutar).toLocaleString('tr-TR')}</td>
+                    <td>${s.odemeyontemi}</td>
+                    <td><span class="status ${getStatusClass(s.durum)}">${s.durum}</span></td>
+                    <td>
+                        <button class="btn btn-icon btn-sm" onclick="showDetay(${s.siparisid})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-icon btn-sm" onclick="durumDegistir(${s.siparisid}, '${s.durum}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterSatislar() {
+            const durum = document.getElementById('filterDurum').value;
+            const odeme = document.getElementById('filterOdeme').value;
+            const musteriTipi = document.getElementById('filterMusteriTipi').value;
+            const baslangic = document.getElementById('filterBaslangic').value;
+            const bitis = document.getElementById('filterBitis').value;
+
+            let filtered = tumSatislar;
+
+            if (durum) {
+                filtered = filtered.filter(s => s.durum === durum);
+            }
+            if (odeme) {
+                filtered = filtered.filter(s => s.odemeyontemi === odeme);
+            }
+            if (musteriTipi) {
+                filtered = filtered.filter(s => {
+                    const musteri = musteriler.find(m => m.musteriid === s.musteriid);
+                    return musteri && (musteri.musteri_tipi || 'Bireysel') === musteriTipi;
+                });
+            }
+            if (baslangic) {
+                filtered = filtered.filter(s => new Date(s.siparistarihi) >= new Date(baslangic));
+            }
+            if (bitis) {
+                filtered = filtered.filter(s => new Date(s.siparistarihi) <= new Date(bitis));
+            }
+
+            renderSatislar(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterDurum').value = '';
+            document.getElementById('filterOdeme').value = '';
+            document.getElementById('filterMusteriTipi').value = '';
+            document.getElementById('filterBaslangic').value = '';
+            document.getElementById('filterBitis').value = '';
+            renderSatislar(tumSatislar);
+        }
+
+        function openYeniSatisModal() {
+            document.getElementById('yeniSatisModal').classList.add('active');
+            document.getElementById('urunListesi').innerHTML = '';
+            document.getElementById('toplamTutar').textContent = '₺0';
+            urunSayaci = 0;
+            urunEkle();
+        }
+
+        function closeModal() {
+            document.getElementById('yeniSatisModal').classList.remove('active');
+        }
+
+        function urunEkle() {
+            const id = urunSayaci++;
+            const div = document.createElement('div');
+            div.className = 'urun-row';
+            div.id = `urun-${id}`;
+            div.innerHTML = `
+                <select onchange="hesaplaToplam()" id="urunSelect-${id}">
+                    <option value="">Ürün Seçin</option>
+                    ${urunler.map(u => `<option value="${u.urunid}" data-fiyat="${u.fiyat}">${u.urunadi} - ₺${Number(u.fiyat).toLocaleString('tr-TR')}</option>`).join('')}
+                </select>
+                <input type="number" min="1" value="1" placeholder="Adet" onchange="hesaplaToplam()" id="miktar-${id}">
+                <button type="button" class="btn btn-icon btn-sm danger" onclick="urunSil(${id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            document.getElementById('urunListesi').appendChild(div);
+        }
+
+        function urunSil(id) {
+            document.getElementById(`urun-${id}`)?.remove();
+            hesaplaToplam();
+        }
+
+        function hesaplaToplam() {
+            let toplam = 0;
+            document.querySelectorAll('.urun-row').forEach(row => {
+                const select = row.querySelector('select');
+                const miktar = row.querySelector('input');
+                if (select.value && miktar.value) {
+                    const fiyat = select.options[select.selectedIndex].dataset.fiyat;
+                    toplam += Number(fiyat) * Number(miktar.value);
+                }
+            });
+            document.getElementById('toplamTutar').textContent = `₺${toplam.toLocaleString('tr-TR')}`;
+        }
+
+        async function satisKaydet() {
+            const musteriid = document.getElementById('musteriSelect').value;
+            const odemeyontemi = document.getElementById('odemeSelect').value;
+
+            if (!musteriid || !odemeyontemi) {
+                alert('Müşteri ve ödeme yöntemi seçin!');
+                return;
+            }
+
+            const urunlerData = [];
+            document.querySelectorAll('.urun-row').forEach(row => {
+                const select = row.querySelector('select');
+                const miktar = row.querySelector('input');
+                if (select.value && miktar.value) {
+                    urunlerData.push({
+                        urunid: Number(select.value),
+                        miktar: Number(miktar.value),
+                        birimfiyat: Number(select.options[select.selectedIndex].dataset.fiyat)
+                    });
+                }
+            });
+
+            if (urunlerData.length === 0) {
+                alert('En az bir ürün ekleyin!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API}/siparisler`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ musteriid, odemeyontemi, urunler: urunlerData })
+                });
+
+                if (response.ok) {
+                    alert('Satış başarıyla kaydedildi!');
+                    closeModal();
+                    loadSatislar();
+                } else {
+                    alert('Hata oluştu!');
+                }
+            } catch (err) {
+                console.error('Kayıt hatası:', err);
+                alert('Bağlantı hatası!');
+            }
+        }
+
+        async function showDetay(id) {
+            try {
+                const response = await fetch(`${API}/siparisler/${id}`);
+                const data = await response.json();
+                
+                const musteri = musteriler.find(m => m.musteriid === data.musteriid);
+                const musteriTipi = musteri ? (musteri.musteri_tipi || 'Bireysel') : 'Bireysel';
+                
+                document.getElementById('detayContent').innerHTML = `
+                    <div class="detay-item"><span>Sipariş No:</span><strong>#${data.siparisid}</strong></div>
+                    <div class="detay-item"><span>Müşteri:</span><strong>${data.musteriadi}</strong></div>
+                    <div class="detay-item"><span>Müşteri Tipi:</span><span class="badge ${musteriTipi === 'Kurumsal' ? 'orange' : 'blue'}">${musteriTipi}</span></div>
+                    <div class="detay-item"><span>Tarih:</span><strong>${new Date(data.siparistarihi).toLocaleDateString('tr-TR')}</strong></div>
+                    <div class="detay-item"><span>Ödeme:</span><strong>${data.odemeyontemi}</strong></div>
+                    <div class="detay-item"><span>Durum:</span><span class="status ${getStatusClass(data.durum)}">${data.durum}</span></div>
+                    <div class="detay-item"><span>Toplam:</span><strong style="color:var(--accent);">₺${Number(data.toplamtutar).toLocaleString('tr-TR')}</strong></div>
+                    ${data.detaylar && data.detaylar.length > 0 ? `
+                        <h4 style="margin-top:20px; margin-bottom:10px;">Ürünler</h4>
+                        ${data.detaylar.map(d => `
+                            <div class="detay-item">
+                                <span>${d.urunadi} x${d.miktar}</span>
+                                <strong>₺${Number(d.aratoplam).toLocaleString('tr-TR')}</strong>
+                            </div>
+                        `).join('')}
+                    ` : ''}
+                `;
+                document.getElementById('detayModal').classList.add('active');
+            } catch (err) {
+                console.error('Detay yüklenemedi:', err);
+            }
+        }
+
+        function closeDetayModal() {
+            document.getElementById('detayModal').classList.remove('active');
+        }
+
+        async function durumDegistir(id, mevcutDurum) {
+            const durumlar = ['Beklemede', 'Onaylandı', 'Kargoda', 'Teslim Edildi', 'İptal'];
+            const yeniDurum = prompt(`Yeni durum seçin:\n${durumlar.join(', ')}`, mevcutDurum);
+            
+            if (yeniDurum && durumlar.includes(yeniDurum)) {
+                try {
+                    await fetch(`${API}/siparisler/${id}/durum`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ durum: yeniDurum })
+                    });
+                    loadSatislar();
+                } catch (err) {
+                    alert('Hata oluştu!');
+                }
+            }
+        }
+
+        function getStatusClass(durum) {
+            switch (durum) {
+                case 'Teslim Edildi': return 'success';
+                case 'Kargoda': return 'shipping';
+                case 'Beklemede': return 'pending';
+                case 'Onaylandı': return 'shipping';
+                case 'İptal': return 'cancelled';
+                default: return '';
+            }
+        }
+
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').classList.toggle('active');
+        });
+        document.getElementById('overlay').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        });
+    </script>
+</body>
+</html>
